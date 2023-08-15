@@ -172,6 +172,21 @@ pub struct Module<'ctx> {
     _marker: PhantomData<&'ctx Context>,
 }
 
+impl<'ctx> std::convert::TryFrom<LLVMModuleRef> for Module<'ctx> {
+    type Error = LLVMString;
+
+    fn try_from(module: LLVMModuleRef) -> Result<Self, Self::Error> {
+        debug_assert!(!module.is_null());
+        let verify = Self::verify_raw(module);
+        assert!(
+            verify.is_ok(),
+            "Cloning a Module seems to segfault when module is not valid. We are preventing that here. Error: {}",
+            verify.unwrap_err()
+        );
+        Ok(unsafe { Self::new(LLVMCloneModule(module)) })
+    }
+}
+
 impl<'ctx> Module<'ctx> {
     pub(crate) unsafe fn new(module: LLVMModuleRef) -> Self {
         debug_assert!(!module.is_null());
@@ -182,6 +197,21 @@ impl<'ctx> Module<'ctx> {
             data_layout: RefCell::new(Some(Module::get_borrowed_data_layout(module))),
             _marker: PhantomData,
         }
+    }
+
+    fn verify_raw(module: LLVMModuleRef) -> Result<(), LLVMString> {
+        let mut err_str = MaybeUninit::uninit();
+
+        let action = LLVMVerifierFailureAction::LLVMReturnStatusAction;
+
+        let code = unsafe { LLVMVerifyModule(module, action, err_str.as_mut_ptr()) };
+
+        let err_str = unsafe { err_str.assume_init() };
+        if code == 1 && !err_str.is_null() {
+            return unsafe { Err(LLVMString::new(err_str)) };
+        }
+
+        Ok(())
     }
 
     /// Acquires the underlying raw pointer belonging to this `Module` type.
