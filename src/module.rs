@@ -172,23 +172,8 @@ pub struct Module<'ctx> {
     _marker: PhantomData<&'ctx Context>,
 }
 
-impl<'ctx> std::convert::TryFrom<LLVMModuleRef> for Module<'ctx> {
-    type Error = LLVMString;
-
-    fn try_from(module: LLVMModuleRef) -> Result<Self, Self::Error> {
-        debug_assert!(!module.is_null());
-        let verify = Self::verify_raw(module);
-        assert!(
-            verify.is_ok(),
-            "Cloning a Module seems to segfault when module is not valid. We are preventing that here. Error: {}",
-            verify.unwrap_err()
-        );
-        Ok(unsafe { Self::new(LLVMCloneModule(module)) })
-    }
-}
-
 impl<'ctx> Module<'ctx> {
-    pub(crate) unsafe fn new(module: LLVMModuleRef) -> Self {
+    pub unsafe fn new(module: LLVMModuleRef) -> Self {
         debug_assert!(!module.is_null());
 
         Module {
@@ -217,6 +202,17 @@ impl<'ctx> Module<'ctx> {
     /// Acquires the underlying raw pointer belonging to this `Module` type.
     pub fn as_mut_ptr(&self) -> LLVMModuleRef {
         self.module.get()
+    }
+
+    pub fn into_raw(self) -> LLVMModuleRef {
+        let module = self.module.get();
+        let verify = Self::verify_raw(module);
+        assert!(
+            verify.is_ok(),
+            "Cloning a Module seems to segfault when module is not valid. We are preventing that here. Error: {}",
+            verify.unwrap_err()
+        );
+        module
     }
 
     /// Creates a function given its `name` and `ty`, adds it to the `Module`
