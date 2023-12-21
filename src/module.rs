@@ -212,7 +212,7 @@ impl<'ctx> Module<'ctx> {
             "Cloning a Module seems to segfault when module is not valid. We are preventing that here. Error: {}",
             verify.unwrap_err()
         );
-        module
+        unsafe { LLVMCloneModule(module) }
     }
 
     /// Creates a function given its `name` and `ty`, adds it to the `Module`
