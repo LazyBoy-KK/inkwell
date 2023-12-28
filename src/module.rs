@@ -173,6 +173,7 @@ pub struct Module<'ctx> {
 }
 
 impl<'ctx> Module<'ctx> {
+    /// create a new `Module` from raw LLVM Module pointer
     pub unsafe fn new(module: LLVMModuleRef) -> Self {
         debug_assert!(!module.is_null());
 
@@ -196,6 +197,10 @@ impl<'ctx> Module<'ctx> {
             return unsafe { Err(LLVMString::new(err_str)) };
         }
 
+        if !err_str.is_null() {
+            let _ = LLVMString::new(err_str);
+        }
+
         Ok(())
     }
 
@@ -204,6 +209,7 @@ impl<'ctx> Module<'ctx> {
         self.module.get()
     }
 
+    /// Acquires the underlying raw pointer belonging to this `Module` type and drop this `Module`
     pub fn into_raw(self) -> LLVMModuleRef {
         let module = self.module.get();
         let verify = Self::verify_raw(module);
@@ -762,6 +768,10 @@ impl<'ctx> Module<'ctx> {
         let err_str = unsafe { err_str.assume_init() };
         if code == 1 && !err_str.is_null() {
             return unsafe { Err(LLVMString::new(err_str)) };
+        }
+
+        if !err_str.is_null() {
+            let _ = LLVMString::new(err_str);
         }
 
         Ok(())
