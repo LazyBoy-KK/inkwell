@@ -827,6 +827,7 @@ impl Target {
         }
     }
 
+    #[cfg(not(feature = "disable-alltargets-init"))]
     pub fn initialize_native(config: &InitializationConfig) -> Result<(), String> {
         use llvm_sys::target::{
             LLVM_InitializeNativeAsmParser, LLVM_InitializeNativeAsmPrinter, LLVM_InitializeNativeDisassembler,
@@ -873,6 +874,7 @@ impl Target {
         Ok(())
     }
 
+    #[cfg(not(feature = "disable-alltargets-init"))]
     pub fn initialize_all(config: &InitializationConfig) {
         use llvm_sys::target::{
             LLVM_InitializeAllAsmParsers, LLVM_InitializeAllAsmPrinters, LLVM_InitializeAllDisassemblers,
