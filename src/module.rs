@@ -49,13 +49,14 @@ use crate::memory_buffer::MemoryBuffer;
 use crate::passes::PassBuilderOptions;
 use crate::support::{to_c_str, LLVMString};
 #[llvm_versions(13..)]
-use crate::targets::TargetMachine;
-use crate::targets::{InitializationConfig, Target, TargetTriple};
+use crate::targets::{TargetMachine, TargetTriple};
 use crate::types::{AsTypeRef, BasicType, FunctionType, StructType};
 #[llvm_versions(7..)]
 use crate::values::BasicValue;
 use crate::values::{AsValueRef, FunctionValue, GlobalValue, MetadataValue};
 use crate::{AddressSpace, OptimizationLevel};
+#[cfg(not(feature = "disable-alltargets-init"))]
+use crate::targets::InitializationConfig;
 
 #[llvm_enum(LLVMLinkage)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -622,6 +623,16 @@ impl<'ctx> Module<'ctx> {
         *self.owned_by_ee.borrow_mut() = Some(execution_engine.clone());
 
         Ok(execution_engine)
+    }
+
+    /// set execution engine
+    pub fn set_owned_by_ee(&self, ee: &ExecutionEngine<'ctx>) {
+        *self.owned_by_ee.borrow_mut() = Some(ee.clone());
+    }
+
+    /// have execution engine
+    pub fn have_owned_by_ee(&self) -> bool {
+        self.owned_by_ee.borrow().is_some()
     }
 
     /// Creates a `GlobalValue` based on a type in an address space.
